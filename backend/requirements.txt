@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+SQLAlchemy
+pydantic
+python-jose      # JWTサポート
+passlib          # パスワードハッシュ化（必要に応じて）
+python-multipart
+pytest
+httpx
+
