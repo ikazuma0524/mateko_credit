@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials
 from .database import engine
 from .models import Base
-from .routers.admin import subjects, students, calculate_credits
+from .routers.admin import subjects, students
+from .routers.admin import admin as admin_router
 from .firebase_auth import auth_required, security
 import firebase_admin
 from firebase_admin import auth
@@ -33,4 +34,5 @@ async def protected_route(credentials: HTTPAuthorizationCredentials = Security(s
 # ルーターの登録
 app.include_router(subjects.router)
 app.include_router(students.router)
-app.include_router(calculate_credits.router)
+
+app.include_router(admin_router.router)

@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SQLAlchemyEnum,Table
 from sqlalchemy.orm import relationship
 from .database import Base
+from enum import Enum as PyEnum
+
 
 # 中間テーブルの定義（学生と科目の多対多リレーションシップ）
 student_subject = Table('student_subject', Base.metadata,
@@ -20,30 +22,32 @@ class Student(Base):
     # リレーションシップの定義
     completed_subjects = relationship("Subject", secondary=student_subject, back_populates="students")
 
-class SubjectCategoryEnum(PyEnum):
-    COMPULSORY = "Compulsory"  # 必修科目
-    LIMITED_ELECTIVE = "Limited Elective"  #限定選択
-    STANDARD_ELECTIVE = "Standard Elective"  # 標準選択
-    ELECTIVE ='Elective'  #選択科目
 
-# コースごとの科目のカテゴリを保存する中間テーブル
+
+# Enumの定義
+class SubjectCategoryEnum(PyEnum):
+    COMPULSORY = "COMPULSORY"
+    LIMITED_ELECTIVE = "LIMITED_ELECTIVE"
+    STANDARD_ELECTIVE = "STANDARD_ELECTIVE"
+    ELECTIVE = "ELECTIVE"
 class SubjectCategory(Base):
     __tablename__ = "subject_category"
 
     id = Column(Integer, primary_key=True, index=True)
     course = Column(String, nullable=False)  # コース名 (A, B, C)
     subject_id = Column(Integer, ForeignKey('subjects.id'), nullable=False)
-    category = Column(Enum(SubjectCategoryEnum), nullable=False)  
+    category = Column(SQLAlchemyEnum(SubjectCategoryEnum), nullable=False)
     subject = relationship("Subject", back_populates="categories")
-    
+
 class Subject(Base):
     __tablename__ = "subjects"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    credit = Column(Integer)
 
     # 科目カテゴリのリレーション
     categories = relationship("SubjectCategory", back_populates="subject")
 
     # リレーションシップの定義
-    students = relationship("Student", secondary=student_subject, back_populates="completed_subjects")
+    students = relationship("Student", secondary="student_subject", back_populates="completed_subjects")

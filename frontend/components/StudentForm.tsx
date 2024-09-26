@@ -1,5 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebase/config';
 import api from '../utils/api';
 
 interface Subject {
@@ -13,9 +14,12 @@ interface StudentFormProps {
 
 const StudentForm: React.FC<StudentFormProps> = ({ onSubmit }) => {
   const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [course, setCourse] = useState<string>('A');
   const [completedSubjects, setCompletedSubjects] = useState<number[]>([]);
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -24,7 +28,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ onSubmit }) => {
         setAvailableSubjects(response.data);
       } catch (error) {
         console.error('Failed to fetch subjects:', error);
-        // TODO: Add proper error handling (e.g., display error message to user)
+        setError('Failed to fetch subjects. Please try again.');
       }
     };
     fetchSubjects();
@@ -32,17 +36,31 @@ const StudentForm: React.FC<StudentFormProps> = ({ onSubmit }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const student = { name, course, completed_subjects: completedSubjects };
     try {
-      await api.post('/students', student);
+      // Firebase認証でユーザー作成
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // FastAPIサーバーにユーザー情報を送信
+      await api.post('/students', {
+        name,
+        email,
+        course,
+        completed_subjects: completedSubjects,
+        uid: user.uid  // FirebaseユーザーのUIDもサーバーに送信
+      });
+
       onSubmit();
       // Reset form after successful submission
       setName('');
+      setEmail('');
+      setPassword('');
       setCourse('A');
       setCompletedSubjects([]);
+      setError('');
     } catch (error) {
       console.error('Failed to create student:', error);
-      // TODO: Add proper error handling (e.g., display error message to user)
+      setError('Failed to create an account. Please try again.');
     }
   };
 
@@ -56,13 +74,36 @@ const StudentForm: React.FC<StudentFormProps> = ({ onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <p className="text-red-500">{error}</p>}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Student Name</label>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name</label>
         <input
           type="text"
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+        <input
+          type="email"
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+        <input
+          type="password"
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           required
         />
@@ -104,7 +145,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ onSubmit }) => {
         type="submit"
         className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
       >
-        Submit
+        Create Account
       </button>
     </form>
   );

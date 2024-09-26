@@ -3,21 +3,42 @@ import { useRouter } from 'next/router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import Link from 'next/link';
+import {AdminCheckResponse} from '../utils/api';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/user');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // IDトークンを取得して管理者権限を確認
+      const idTokenResult = await user.getIdTokenResult();
+      const isAdmin = idTokenResult.claims.admin === true;
+
+      if (isAdmin) {
+        router.push('/admin');
+      } else {
+        router.push('/user');
+      }
     } catch (error) {
-      setError('Failed to log in. Please check your credentials.');
-      console.error(error);
+      console.error('Login error:', error);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Failed to log in. Please check your credentials.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,8 +63,12 @@ const LoginPage: React.FC = () => {
           className="w-full p-2 mb-4 border rounded"
           required
         />
-        <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded mb-4">
-          Login
+        <button 
+          type="submit" 
+          className={`w-full p-2 bg-blue-500 text-white rounded mb-4 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+          disabled={loading}
+        >
+          {loading ? 'Logging in...' : 'Login'}
         </button>
         <p className="text-center">
           Don't have an account? <Link href="/signup" className="text-blue-500 hover:underline">Sign up</Link>

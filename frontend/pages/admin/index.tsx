@@ -25,13 +25,13 @@ const HomePage: React.FC = () => {
             title="科目管理"
             content="View and manage university subjects"
             icon={<BookOpen size={24} />}
-            link="/subjects"
+            link="/admin/subjects"
           />
           <DashboardCard
             title="ユーザー管理"
             content="Manage student information and records"
             icon={<Users size={24} />}
-            link="/students"
+            link="/admin/students"
           />
           <DashboardCard
             title="単位計算"

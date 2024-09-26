@@ -4,15 +4,16 @@ import SubjectForm from '../../components/SubjectForm';
 import api from '../../utils/api';
 import { PlusIcon, BookOpenIcon } from 'lucide-react';
 
+interface Category {
+  course: string;
+  category: string;
+}
+
 interface Subject {
   id: number;
   name: string;
   credit: number;
-  course_categories: {
-    A: string;
-    B: string;
-    C: string;
-  };
+  categories: Category[];
 }
 
 const Subjects: React.FC = () => {
@@ -38,6 +39,11 @@ const Subjects: React.FC = () => {
   const handleSubjectSubmit = async () => {
     await fetchSubjects();
     setShowForm(false);
+  };
+
+  const getCategoryForCourse = (categories: Category[], course: string) => {
+    const category = categories.find(cat => cat.course === course);
+    return category ? category.category : 'N/A';
   };
 
   return (
@@ -70,9 +76,9 @@ const Subjects: React.FC = () => {
               <div className="mt-4">
                 <p className="text-sm text-gray-500">Course Categories:</p>
                 <ul className="list-disc list-inside mt-2">
-                  <li>Course A: {subject.course_categories.A}</li>
-                  <li>Course B: {subject.course_categories.B}</li>
-                  <li>Course C: {subject.course_categories.C}</li>
+                  <li>Course A: {getCategoryForCourse(subject.categories, 'A')}</li>
+                  <li>Course B: {getCategoryForCourse(subject.categories, 'B')}</li>
+                  <li>Course C: {getCategoryForCourse(subject.categories, 'C')}</li>
                 </ul>
               </div>
             </div>

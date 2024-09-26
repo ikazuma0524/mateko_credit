@@ -12,6 +12,7 @@ import firebase_admin
 from firebase_admin import auth
 from firebase_admin import credentials
 
+from ...schemas import credit_calculation as schemas  
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -115,3 +116,72 @@ def get_student_by_id(student_id: str, db: Session = Depends(get_db)):
     if student is None:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
+
+@router.get("/calculate-credits", response_model=schemas.CreditCalculation)
+@auth_required
+def calculate_credits(current_user: dict = Depends(security), db: Session = Depends(get_db)):
+    try:
+        # Firebaseの認証情報からUIDを取得
+        uid = current_user['uid']
+        
+        # UIDを使用して学生情報を取得
+        student = db.query(models.Student).filter(models.Student.uid == uid).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        course = student.course
+        completed_subjects = student.completed_subjects
+
+        credits = {
+            "compulsory": 0,
+            "limited_elective": 0,
+            "standard_elective": 0,
+            "elective": 0,
+            "total": 0
+        }
+
+        details = {
+            "compulsory_subjects": [],
+            "limited_elective_subjects": [],
+            "standard_elective_subjects": [],
+            "elective_subjects": []
+        }
+
+        for subject_id in completed_subjects:
+            subject = db.query(models.Subject).filter(models.Subject.id == subject_id).first()
+            if not subject:
+                continue
+            category = subject.course_categories.get(course)
+            if category == "必修科目":
+                credits["compulsory"] += subject.credit
+                details["compulsory_subjects"].append(subject_id)
+            elif category == "限定選択科目":
+                credits["limited_elective"] += subject.credit
+                details["limited_elective_subjects"].append(subject_id)
+            elif category == "標準選択科目":
+                credits["standard_elective"] += subject.credit
+                details["standard_elective_subjects"].append(subject_id)
+            else:
+                credits["elective"] += subject.credit
+                details["elective_subjects"].append(subject_id)
+            credits["total"] += subject.credit
+
+        requirements = schemas.CreditRequirement()
+        requirements_met = {
+            "compulsory": credits["compulsory"] >= requirements.required_compulsory,
+            "limited_elective": credits["limited_elective"] >= requirements.required_limited_elective,
+            "limited_standard_elective": (credits["limited_elective"] + credits["standard_elective"]) >= requirements.required_limited_standard_elective,
+            "total": credits["total"] >= requirements.required_total
+        }
+
+        return schemas.CreditCalculation(
+            student_id=student.id,
+            course=course,
+            credits=credits,
+            requirements_met=requirements_met,
+            details=details
+        )
+
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")

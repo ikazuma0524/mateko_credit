@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import StudentForm from '../../components/StudentForm';
-import CreditSummary from '../../components/CreditSummary';
 import Alert from '../../components/Alert';
 import api from '../../utils/api';
 import { UserIcon, PlusIcon } from 'lucide-react';
@@ -15,7 +14,6 @@ interface Student {
 
 const Students: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,23 +64,10 @@ const Students: React.FC = () => {
                 <h2 className="text-xl font-semibold text-gray-800">{student.name}</h2>
               </div>
               <p className="text-gray-600 mb-2">Course: {student.course}</p>
-              <p className="text-gray-600 mb-4">Completed Subjects: {student.completed_subjects.length}</p>
-              <button
-                onClick={() => setSelectedStudent(student)}
-                className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
-              >
-                View Credit Summary
-              </button>
+              <p className="text-gray-600">Completed Subjects: {student.completed_subjects.length}</p>
             </div>
           ))}
         </div>
-
-        {selectedStudent && (
-          <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">Credit Summary for {selectedStudent.name}</h2>
-            <CreditSummary studentId={selectedStudent.id} />
-          </div>
-        )}
       </main>
     </div>
   );

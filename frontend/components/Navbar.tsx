@@ -9,9 +9,9 @@ const Navbar: React.FC = () => {
         <Link href="/" className="text-2xl font-bold">まてこう単位計算アプリ
         </Link>
         <div className="space-x-4">
-          <Link href="/" className="hover:underline">Home</Link>
-          <Link href="/subjects" className="hover:underline">Subjects</Link>
-          <Link href="/students" className="hover:underline">Students</Link>
+          <Link href="/admin" className="hover:underline">Home</Link>
+          <Link href="/admin/subjects" className="hover:underline">Subjects</Link>
+          <Link href="/admin/students" className="hover:underline">Students</Link>
         </div>
       </div>
     </nav>
